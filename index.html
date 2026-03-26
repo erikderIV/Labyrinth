@@ -1,1234 +1,829 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Labyrinth</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap" rel="stylesheet" />
-    <style>
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            --bg: #0a0a0c;
-            --surface: #111116;
-            --border: #2a2a35;
-            --accent: #c8ff00;
-            --accent2: #ff4040;
-            --accent3: #7c3aed;
-            --text: #e8e8e0;
-            --muted: #666670;
-            --start: #22c55e;
-            --goal: #3b82f6;
-            --zone: #dc2626;
-            --player: #facc15;
-            --wall: #1c1c24;
-            --free: #0f0f14;
-            --locked: #1e1e28;
-            --gold: #f59e0b;
-        }
-
-        html, body {
-            height: 100%;
-            background: var(--bg);
-            color: var(--text);
-            font-family: 'Share Tech Mono', monospace;
-            overflow: hidden;
-        }
-
-        .screen {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-            .screen.active {
-                display: flex;
-            }
-
-        /* ── MAIN MENU ── */
-        .menu-inner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.4rem;
-            width: min(480px, 92vw);
-            animation: fadeUp 0.5s ease both;
-        }
-
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(24px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .title {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: clamp(4rem, 12vw, 7rem);
-            letter-spacing: 0.12em;
-            color: var(--accent);
-            line-height: 1;
-            text-shadow: 0 0 40px rgba(200,255,0,0.25);
-        }
-
-        .subtitle {
-            font-size: 0.82rem;
-            color: var(--muted);
-            text-align: center;
-            letter-spacing: 0.06em;
-            margin-top: -0.8rem;
-        }
-
-        /* ── MODE SELECT ── */
-        .mode-cards {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-            width: 100%;
-        }
-
-        .mode-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.4rem 1.2rem;
-            cursor: pointer;
-            transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            text-align: left;
-        }
-
-            .mode-card:hover {
-                border-color: var(--accent);
-                transform: translateY(-2px);
-                box-shadow: 0 8px 30px rgba(200,255,0,0.08);
-            }
-
-            .mode-card:active {
-                transform: translateY(0);
-            }
-
-            .mode-card.level-mode:hover {
-                border-color: var(--accent3);
-                box-shadow: 0 8px 30px rgba(124,58,237,0.15);
-            }
-
-        .mode-icon {
-            font-size: 1.8rem;
-            line-height: 1;
-        }
-
-        .mode-name {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.3rem;
-            letter-spacing: 0.1em;
-            color: var(--accent);
-        }
-
-        .mode-card.level-mode .mode-name {
-            color: #a78bfa;
-        }
-
-        .mode-desc {
-            font-size: 0.7rem;
-            color: var(--muted);
-            line-height: 1.5;
-        }
-
-        /* ── SETTINGS ── */
-        .settings {
-            width: 100%;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 1.2rem 1.4rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .setting-row {
-            display: grid;
-            grid-template-columns: 1fr auto auto;
-            align-items: center;
-            gap: 12px;
-        }
-
-            .setting-row label {
-                font-size: 0.78rem;
-                color: var(--muted);
-                letter-spacing: 0.05em;
-            }
-
-                .setting-row label small {
-                    font-size: 0.68rem;
-                    opacity: 0.6;
-                }
-
-            .setting-row input[type=range] {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 140px;
-                height: 3px;
-                background: var(--border);
-                border-radius: 2px;
-                outline: none;
-                cursor: pointer;
-            }
-
-                .setting-row input[type=range]::-webkit-slider-thumb {
-                    -webkit-appearance: none;
-                    width: 14px;
-                    height: 14px;
-                    border-radius: 50%;
-                    background: var(--accent);
-                    cursor: pointer;
-                    transition: transform 0.15s;
-                }
-
-                    .setting-row input[type=range]::-webkit-slider-thumb:hover {
-                        transform: scale(1.25);
-                    }
-
-        .val {
-            font-size: 0.82rem;
-            color: var(--accent);
-            min-width: 32px;
-            text-align: right;
-        }
-
-        .legend-box {
-            display: flex;
-            gap: 1.4rem;
-            font-size: 0.75rem;
-            color: var(--muted);
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .swatch {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-            display: inline-block;
-        }
-
-            .swatch.start {
-                background: var(--start);
-            }
-
-            .swatch.goal {
-                background: var(--goal);
-            }
-
-            .swatch.zone {
-                background: var(--zone);
-            }
-
-            .swatch.player {
-                background: var(--player);
-            }
-
-        .btn-primary {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.1rem;
-            letter-spacing: 0.15em;
-            padding: 0.7rem 2.8rem;
-            background: var(--accent);
-            color: #0a0a0c;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: opacity 0.15s, transform 0.1s;
-        }
-
-            .btn-primary:hover {
-                opacity: 0.88;
-            }
-
-            .btn-primary:active {
-                transform: scale(0.97);
-            }
-
-            .btn-primary.purple {
-                background: #7c3aed;
-                color: #fff;
-            }
-
-        .btn-secondary {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.8rem;
-            letter-spacing: 0.08em;
-            padding: 0.5rem 1.6rem;
-            background: transparent;
-            color: var(--muted);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: color 0.15s, border-color 0.15s;
-        }
-
-            .btn-secondary:hover {
-                color: var(--text);
-                border-color: var(--text);
-            }
-
-        .controls-hint {
-            font-size: 0.72rem;
-            color: var(--muted);
-        }
-
-        kbd {
-            display: inline-block;
-            padding: 1px 6px;
-            font-family: inherit;
-            font-size: 0.72rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            margin: 0 2px;
-        }
-
-        /* ── LEVEL SELECT SCREEN ── */
-        #screen-levels {
-            flex-direction: column;
-            gap: 0;
-            overflow: hidden;
-        }
-
-        .levels-header {
-            width: 100%;
-            padding: 1rem 1.4rem;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        .levels-title {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.8rem;
-            letter-spacing: 0.1em;
-            color: #a78bfa;
-        }
-
-        .levels-progress {
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        .levels-grid-wrap {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.2rem;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-
-        .levels-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
-            gap: 8px;
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .level-btn {
-            aspect-ratio: 1;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--surface);
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1.1rem;
-            letter-spacing: 0.06em;
-            color: var(--muted);
-            transition: border-color 0.15s, transform 0.1s, color 0.15s;
-            position: relative;
-        }
-
-            .level-btn.unlocked {
-                color: var(--text);
-                border-color: #3a3a48;
-                cursor: pointer;
-            }
-
-                .level-btn.unlocked:hover {
-                    border-color: #a78bfa;
-                    color: #a78bfa;
-                    transform: scale(1.06);
-                }
-
-            .level-btn.completed {
-                border-color: var(--accent);
-                color: var(--accent);
-                background: rgba(200,255,0,0.04);
-            }
-
-                .level-btn.completed:hover {
-                    border-color: var(--accent);
-                    box-shadow: 0 0 12px rgba(200,255,0,0.15);
-                    transform: scale(1.06);
-                }
-
-            .level-btn.locked {
-                opacity: 0.35;
-                cursor: default;
-            }
-
-            .level-btn .star {
-                font-size: 0.6rem;
-                color: var(--gold);
-                line-height: 1;
-            }
-
-            .level-btn.locked .lock-icon {
-                font-size: 0.85rem;
-                position: absolute;
-                bottom: 4px;
-                right: 5px;
-                color: var(--muted);
-                opacity: 0.5;
-            }
-
-        /* ── RANDOM MENU ── */
-        #screen-random {
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .random-inner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.4rem;
-            width: min(480px, 92vw);
-            animation: fadeUp 0.5s ease both;
-        }
-
-        .back-btn {
-            align-self: flex-start;
-            font-size: 0.75rem;
-            color: var(--muted);
-            background: none;
-            border: none;
-            cursor: pointer;
-            letter-spacing: 0.08em;
-            padding: 0;
-            transition: color 0.15s;
-        }
-
-            .back-btn:hover {
-                color: var(--text);
-            }
-
-        /* ── HUD ── */
-        #screen-game {
-            flex-direction: column;
-            justify-content: flex-start;
-            padding: 0;
-        }
-
-        .hud {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            align-items: center;
-            padding: 0.5rem 1.2rem;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-
-        .hud-item {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-
-        .hud-center {
-            align-items: center;
-        }
-
-        .hud-right {
-            align-items: flex-end;
-        }
-
-        .hud-label {
-            font-size: 0.6rem;
-            color: var(--muted);
-            letter-spacing: 0.1em;
-        }
-
-        .hud-value {
-            font-size: 1rem;
-            color: var(--accent);
-        }
-
-            .hud-value.purple {
-                color: #a78bfa;
-            }
-
-        .hud-status {
-            font-size: 0.72rem;
-            color: var(--muted);
-            letter-spacing: 0.06em;
-            transition: color 0.3s;
-        }
-
-            .hud-status.danger {
-                color: var(--accent2);
-                animation: pulse 0.6s infinite alternate;
-            }
-
-        @keyframes pulse {
-            from {
-                opacity: 1;
-            }
-
-            to {
-                opacity: 0.4;
-            }
-        }
-
-        #maze-container {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            padding: 8px;
-        }
-
-        #maze-canvas {
-            display: block;
-            image-rendering: pixelated;
-        }
-
-        /* ── END SCREEN ── */
-        .end-inner {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.2rem;
-            animation: fadeUp 0.4s ease both;
-        }
-
-        .end-title {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: clamp(2.5rem, 8vw, 4.5rem);
-            letter-spacing: 0.1em;
-        }
-
-            .end-title.win {
-                color: var(--accent);
-            }
-
-            .end-title.lose {
-                color: var(--accent2);
-            }
-
-        .end-msg {
-            font-size: 0.82rem;
-            color: var(--muted);
-            letter-spacing: 0.05em;
-            text-align: center;
-        }
-
-        .end-stats {
-            display: flex;
-            gap: 2.5rem;
-            margin: 0.4rem 0;
-        }
-
-        .stat {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .stat-label {
-            font-size: 0.65rem;
-            color: var(--muted);
-            letter-spacing: 0.1em;
-        }
-
-        .stat-val {
-            font-size: 1.6rem;
-            color: var(--text);
-        }
-
-        .btn-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        #flash-overlay {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s;
-        }
-
-            #flash-overlay.red {
-                background: rgba(220,38,38,0.35);
-                opacity: 1;
-            }
-
-            #flash-overlay.green {
-                background: rgba(34,197,94,0.3);
-                opacity: 1;
-            }
-
-        /* level badge on end */
-        .level-clear-badge {
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 0.15em;
-            color: #a78bfa;
-            background: rgba(124,58,237,0.12);
-            border: 1px solid rgba(124,58,237,0.3);
-            border-radius: 20px;
-            padding: 4px 18px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Labyrinth</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <script src="levels.js"></script>
+  <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0a0c;
+  --surface: #111116;
+  --border:  #2a2a35;
+  --accent:  #c8ff00;
+  --accent2: #ff4040;
+  --accent3: #7c3aed;
+  --text:    #e8e8e0;
+  --muted:   #666670;
+  --start:   #22c55e;
+  --goal:    #3b82f6;
+  --zone:    #dc2626;
+  --player:  #facc15;
+  --wall:    #1c1c24;
+  --free:    #0f0f14;
+  --gold:    #f59e0b;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Share Tech Mono', monospace; overflow: hidden; }
+
+.screen { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; }
+.screen.active { display: flex; }
+
+/* ── MENU ── */
+.menu-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1.4rem; width: min(480px, 92vw); animation: fadeUp .5s ease both;
+}
+@keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+
+.title {
+  font-family:'Bebas Neue',sans-serif; font-size:clamp(4rem,12vw,7rem);
+  letter-spacing:.12em; color:var(--accent); line-height:1;
+  text-shadow:0 0 40px rgba(200,255,0,.25);
+}
+.subtitle { font-size:.82rem; color:var(--muted); text-align:center; letter-spacing:.06em; margin-top:-.8rem; }
+
+.mode-cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; }
+
+.mode-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:8px;
+  padding:1.4rem 1.2rem; cursor:pointer;
+  transition:border-color .2s, transform .15s, box-shadow .2s;
+  display:flex; flex-direction:column; gap:8px; text-align:left;
+}
+.mode-card:hover { border-color:var(--accent); transform:translateY(-2px); box-shadow:0 8px 30px rgba(200,255,0,.08); }
+.mode-card:active { transform:none; }
+.mode-card.level-mode:hover { border-color:var(--accent3); box-shadow:0 8px 30px rgba(124,58,237,.15); }
+.mode-card.level-mode.disabled { opacity:.4; cursor:default; pointer-events:none; }
+
+.mode-icon { font-size:1.8rem; line-height:1; }
+.mode-name { font-family:'Bebas Neue',sans-serif; font-size:1.3rem; letter-spacing:.1em; color:var(--accent); }
+.mode-card.level-mode .mode-name { color:#a78bfa; }
+.mode-desc { font-size:.7rem; color:var(--muted); line-height:1.5; }
+
+/* ── SETTINGS ── */
+.settings {
+  width:100%; background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:1.2rem 1.4rem; display:flex; flex-direction:column; gap:1rem;
+}
+.setting-row { display:grid; grid-template-columns:1fr auto auto; align-items:center; gap:12px; }
+.setting-row label { font-size:.78rem; color:var(--muted); letter-spacing:.05em; }
+.setting-row label small { font-size:.68rem; opacity:.6; }
+.setting-row input[type=range] { -webkit-appearance:none; appearance:none; width:140px; height:3px; background:var(--border); border-radius:2px; outline:none; cursor:pointer; }
+.setting-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:var(--accent); cursor:pointer; transition:transform .15s; }
+.setting-row input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.25); }
+.val { font-size:.82rem; color:var(--accent); min-width:32px; text-align:right; }
+
+.legend-box { display:flex; gap:1.4rem; font-size:.75rem; color:var(--muted); flex-wrap:wrap; justify-content:center; }
+.legend-item { display:flex; align-items:center; gap:6px; }
+.swatch { width:12px; height:12px; border-radius:2px; display:inline-block; }
+.swatch.start  { background:var(--start); }
+.swatch.goal   { background:var(--goal); }
+.swatch.zone   { background:var(--zone); }
+.swatch.player { background:var(--player); }
+
+.btn-primary {
+  font-family:'Bebas Neue',sans-serif; font-size:1.1rem; letter-spacing:.15em;
+  padding:.7rem 2.8rem; background:var(--accent); color:#0a0a0c;
+  border:none; border-radius:4px; cursor:pointer; transition:opacity .15s, transform .1s;
+}
+.btn-primary:hover { opacity:.88; }
+.btn-primary:active { transform:scale(.97); }
+.btn-primary.purple { background:#7c3aed; color:#fff; }
+
+.btn-secondary {
+  font-family:'Share Tech Mono',monospace; font-size:.8rem; letter-spacing:.08em;
+  padding:.5rem 1.6rem; background:transparent; color:var(--muted);
+  border:1px solid var(--border); border-radius:4px; cursor:pointer; transition:color .15s, border-color .15s;
+}
+.btn-secondary:hover { color:var(--text); border-color:var(--text); }
+
+.controls-hint { font-size:.72rem; color:var(--muted); }
+kbd {
+  display:inline-block; padding:1px 6px; font-family:inherit; font-size:.72rem;
+  background:var(--surface); border:1px solid var(--border); border-radius:3px; margin:0 2px;
+}
+
+/* ── RANDOM SCREEN ── */
+#screen-random { flex-direction:column; }
+.random-inner {
+  display:flex; flex-direction:column; align-items:center;
+  gap:1.4rem; width:min(480px,92vw); animation:fadeUp .5s ease both;
+}
+.back-btn { align-self:flex-start; font-size:.75rem; color:var(--muted); background:none; border:none; cursor:pointer; letter-spacing:.08em; padding:0; transition:color .15s; }
+.back-btn:hover { color:var(--text); }
+
+/* ── LEVEL SELECT ── */
+#screen-levels { flex-direction:column; gap:0; overflow:hidden; }
+
+.levels-header {
+  width:100%; padding:.85rem 1.4rem; background:var(--surface);
+  border-bottom:1px solid var(--border); display:flex; align-items:center;
+  justify-content:space-between; flex-shrink:0; gap:12px;
+}
+.levels-title { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:.1em; color:#a78bfa; }
+.levels-progress { font-size:.75rem; color:var(--muted); white-space:nowrap; }
+
+.levels-grid-wrap { flex:1; overflow-y:auto; padding:1rem 1.2rem; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.levels-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px,1fr)); gap:8px; max-width:960px; margin:0 auto; }
+
+/* ── LEVEL CARD ── */
+.level-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:7px;
+  padding:.75rem 1rem; display:flex; align-items:center; gap:12px;
+  cursor:pointer; transition:border-color .15s, transform .1s, box-shadow .15s; min-width:0;
+}
+.level-card:hover { border-color:#a78bfa; transform:translateY(-1px); box-shadow:0 4px 18px rgba(124,58,237,.12); }
+.level-card:active { transform:none; }
+.level-card.completed { border-color:rgba(200,255,0,.4); background:rgba(200,255,0,.03); }
+.level-card.completed:hover { border-color:var(--accent); box-shadow:0 4px 18px rgba(200,255,0,.1); }
+.level-card.locked { opacity:.3; cursor:default; pointer-events:none; }
+
+.level-num { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:.05em; color:var(--muted); min-width:32px; text-align:center; flex-shrink:0; }
+.level-card.unlocked  .level-num { color:#a78bfa; }
+.level-card.completed .level-num { color:var(--accent); }
+
+.level-info { flex:1; min-width:0; }
+.level-name { font-size:.82rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.04em; }
+.level-card.locked .level-name { color:var(--muted); }
+
+.level-meta { font-size:.62rem; color:var(--muted); margin-top:3px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+.level-star { font-size:1rem; color:var(--gold); flex-shrink:0; }
+.level-lock { font-size:.9rem; flex-shrink:0; opacity:.4; }
+
+.pill { display:inline-block; padding:1px 6px; border-radius:10px; font-size:.6rem; background:rgba(124,58,237,.15); color:#c4b5fd; border:1px solid rgba(124,58,237,.2); }
+.pill.fast   { background:rgba(220,38,38,.12);  color:#fca5a5; border-color:rgba(220,38,38,.2); }
+.pill.medium { background:rgba(251,191,36,.10); color:#fcd34d; border-color:rgba(251,191,36,.2); }
+.pill.slow   { background:rgba(34,197,94,.10);  color:#86efac; border-color:rgba(34,197,94,.2); }
+.pill.hand   { background:rgba(56,189,248,.10); color:#7dd3fc; border-color:rgba(56,189,248,.2); }
+
+.no-levels-msg { text-align:center; color:var(--muted); font-size:.82rem; line-height:2; padding:3rem 1rem; grid-column:1/-1; }
+.no-levels-msg code { color:var(--accent); background:rgba(200,255,0,.07); padding:2px 8px; border-radius:3px; }
+
+/* ── HUD ── */
+#screen-game { flex-direction:column; justify-content:flex-start; padding:0; }
+
+.hud {
+  width:100%; display:grid; grid-template-columns:1fr 1fr 1fr;
+  align-items:center; padding:.5rem 1.2rem;
+  background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0;
+}
+.hud-item { display:flex; flex-direction:column; gap:1px; }
+.hud-center { align-items:center; }
+.hud-right  { align-items:flex-end; }
+.hud-label { font-size:.6rem; color:var(--muted); letter-spacing:.1em; }
+.hud-value { font-size:1rem; color:var(--accent); }
+.hud-value.purple { color:#a78bfa; }
+.hud-status { font-size:.72rem; color:var(--muted); letter-spacing:.06em; transition:color .3s; }
+.hud-status.danger { color:var(--accent2); animation:pulse .6s infinite alternate; }
+.hud-level-name { font-size:.62rem; color:#a78bfa; letter-spacing:.06em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; text-align:center; }
+
+@keyframes pulse { from{opacity:1} to{opacity:.4} }
+
+#maze-container { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:8px; }
+#maze-canvas { display:block; image-rendering:pixelated; }
+
+/* ── END SCREEN ── */
+.end-inner { display:flex; flex-direction:column; align-items:center; gap:1.2rem; animation:fadeUp .4s ease both; }
+.end-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(2.5rem,8vw,4.5rem); letter-spacing:.1em; }
+.end-title.win  { color:var(--accent); }
+.end-title.lose { color:var(--accent2); }
+.end-msg { font-size:.82rem; color:var(--muted); letter-spacing:.05em; text-align:center; }
+.end-stats { display:flex; gap:2.5rem; margin:.4rem 0; }
+.stat { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.stat-label { font-size:.65rem; color:var(--muted); letter-spacing:.1em; }
+.stat-val { font-size:1.6rem; color:var(--text); }
+.btn-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.level-clear-badge { font-family:'Bebas Neue',sans-serif; font-size:1rem; letter-spacing:.15em; color:#a78bfa; background:rgba(124,58,237,.12); border:1px solid rgba(124,58,237,.3); border-radius:20px; padding:4px 18px; }
+
+#flash-overlay { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .15s; }
+#flash-overlay.red   { background:rgba(220,38,38,.35); opacity:1; }
+#flash-overlay.green { background:rgba(34,197,94,.3);  opacity:1; }
+
+/* ── ERROR TOAST ── */
+#error-toast {
+  position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%);
+  background:#7f1d1d; color:#fca5a5; border:1px solid #dc2626;
+  padding:.6rem 1.4rem; border-radius:6px; font-size:.78rem;
+  letter-spacing:.04em; opacity:0; transition:opacity .3s;
+  pointer-events:none; z-index:999; white-space:nowrap;
+}
+#error-toast.show { opacity:1; }
+  </style>
 </head>
 <body>
 
-    <!-- ── MAIN MENU ── -->
-    <div id="screen-menu" class="screen active">
-        <div class="menu-inner">
-            <h1 class="title">LABYRINTH</h1>
-            <p class="subtitle">Erreiche das Ziel — bevor die Zone dich verschluckt.</p>
-
-            <div class="mode-cards">
-                <div class="mode-card" id="btn-mode-random">
-                    <span class="mode-icon">🎲</span>
-                    <span class="mode-name">Endlos</span>
-                    <span class="mode-desc">Zufällige Labyrinthe — jedes Mal anders. Stelle Größe & Schwierigkeit selbst ein.</span>
-                </div>
-                <div class="mode-card level-mode" id="btn-mode-levels">
-                    <span class="mode-icon">🏆</span>
-                    <span class="mode-name">Level</span>
-                    <span class="mode-desc">100 handgefertigte Herausforderungen — schalte Level für Level frei.</span>
-                </div>
-            </div>
-
-            <p class="controls-hint">Steuerung: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> oder Pfeiltasten</p>
-        </div>
+<!-- ── MAIN MENU ── -->
+<div id="screen-menu" class="screen active">
+  <div class="menu-inner">
+    <h1 class="title">LABYRINTH</h1>
+    <p class="subtitle">Erreiche das Ziel — bevor die Zone dich verschluckt.</p>
+    <div class="mode-cards">
+      <div class="mode-card" id="btn-mode-random">
+        <span class="mode-icon">🎲</span>
+        <span class="mode-name">Endlos</span>
+        <span class="mode-desc">Zufällige Labyrinthe — jedes Mal anders. Stelle Größe & Schwierigkeit selbst ein.</span>
+      </div>
+      <div class="mode-card level-mode" id="btn-mode-levels">
+        <span class="mode-icon">🏆</span>
+        <span class="mode-name">Level</span>
+        <span class="mode-desc" id="menu-level-desc">Lädt levels.js…</span>
+      </div>
     </div>
+    <p class="controls-hint">Steuerung: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> oder Pfeiltasten</p>
+  </div>
+</div>
 
-    <!-- ── RANDOM SETTINGS ── -->
-    <div id="screen-random" class="screen">
-        <div class="random-inner">
-            <button class="back-btn" id="btn-back-random">← ZURÜCK</button>
-            <h2 style="font-family:'Bebas Neue';font-size:2.2rem;letter-spacing:0.1em;color:var(--accent)">ENDLOS MODUS</h2>
-            <div class="settings">
-                <div class="setting-row">
-                    <label for="cfg-size">Größe</label>
-                    <input type="range" id="cfg-size" min="11" max="51" step="2" value="25" />
-                    <span id="cfg-size-val" class="val">25</span>
-                </div>
-                <div class="setting-row">
-                    <label for="cfg-diff">Schwierigkeit</label>
-                    <input type="range" id="cfg-diff" min="1" max="20" step="1" value="10" />
-                    <span id="cfg-diff-val" class="val">10</span>
-                </div>
-                <div class="setting-row">
-                    <label for="cfg-speed">Zonengeschwindigkeit <small>(ms)</small></label>
-                    <input type="range" id="cfg-speed" min="50" max="800" step="50" value="250" />
-                    <span id="cfg-speed-val" class="val">250</span>
-                </div>
-                <div class="setting-row">
-                    <label for="cfg-delay">Startverzögerung <small>(s)</small></label>
-                    <input type="range" id="cfg-delay" min="1" max="15" step="1" value="4" />
-                    <span id="cfg-delay-val" class="val">4</span>
-                </div>
-            </div>
-
-            <div class="legend-box">
-                <div class="legend-item"><span class="swatch start"></span>Start</div>
-                <div class="legend-item"><span class="swatch goal"></span>Ziel</div>
-                <div class="legend-item"><span class="swatch zone"></span>Zone</div>
-                <div class="legend-item"><span class="swatch player"></span>Spieler</div>
-            </div>
-
-            <button id="btn-start-random" class="btn-primary">STARTEN</button>
-        </div>
+<!-- ── RANDOM SETTINGS ── -->
+<div id="screen-random" class="screen">
+  <div class="random-inner">
+    <button class="back-btn" id="btn-back-random">← ZURÜCK</button>
+    <h2 style="font-family:'Bebas Neue';font-size:2.2rem;letter-spacing:.1em;color:var(--accent)">ENDLOS MODUS</h2>
+    <div class="settings">
+      <div class="setting-row">
+        <label for="cfg-size">Größe</label>
+        <input type="range" id="cfg-size" min="11" max="51" step="2" value="25">
+        <span id="cfg-size-val" class="val">25</span>
+      </div>
+      <div class="setting-row">
+        <label for="cfg-diff">Schwierigkeit</label>
+        <input type="range" id="cfg-diff" min="1" max="20" step="1" value="10">
+        <span id="cfg-diff-val" class="val">10</span>
+      </div>
+      <div class="setting-row">
+        <label for="cfg-speed">Zonengeschwindigkeit <small>(ms)</small></label>
+        <input type="range" id="cfg-speed" min="50" max="800" step="50" value="250">
+        <span id="cfg-speed-val" class="val">250</span>
+      </div>
+      <div class="setting-row">
+        <label for="cfg-delay">Startverzögerung <small>(s)</small></label>
+        <input type="range" id="cfg-delay" min="1" max="15" step="1" value="4">
+        <span id="cfg-delay-val" class="val">4</span>
+      </div>
     </div>
-
-    <!-- ── LEVEL SELECT ── -->
-    <div id="screen-levels" class="screen">
-        <div class="levels-header">
-            <div style="display:flex;align-items:center;gap:14px">
-                <button class="back-btn" id="btn-back-levels">← ZURÜCK</button>
-                <span class="levels-title">LEVEL MODUS</span>
-            </div>
-            <span class="levels-progress" id="levels-progress-text">0 / 100</span>
-        </div>
-        <div class="levels-grid-wrap">
-            <div class="levels-grid" id="levels-grid"></div>
-        </div>
+    <div class="legend-box">
+      <div class="legend-item"><span class="swatch start"></span>Start</div>
+      <div class="legend-item"><span class="swatch goal"></span>Ziel</div>
+      <div class="legend-item"><span class="swatch zone"></span>Zone</div>
+      <div class="legend-item"><span class="swatch player"></span>Spieler</div>
     </div>
+    <button id="btn-start-random" class="btn-primary">STARTEN</button>
+  </div>
+</div>
 
-    <!-- ── GAME ── -->
-    <div id="screen-game" class="screen">
-        <div class="hud">
-            <div class="hud-item">
-                <span class="hud-label" id="hud-left-label">ZONE IN</span>
-                <span id="hud-countdown" class="hud-value">--</span>
-            </div>
-            <div class="hud-item hud-center">
-                <span id="hud-status" class="hud-status"></span>
-                <span id="hud-level-label" class="hud-label" style="text-align:center"></span>
-            </div>
-            <div class="hud-item hud-right">
-                <span class="hud-label">SCHRITTE</span>
-                <span id="hud-steps" class="hud-value">0</span>
-            </div>
-        </div>
-        <div id="maze-container">
-            <canvas id="maze-canvas"></canvas>
-        </div>
+<!-- ── LEVEL SELECT ── -->
+<div id="screen-levels" class="screen">
+  <div class="levels-header">
+    <div style="display:flex;align-items:center;gap:14px;min-width:0">
+      <button class="back-btn" id="btn-back-levels">← ZURÜCK</button>
+      <span class="levels-title">LEVEL MODUS</span>
     </div>
+    <span class="levels-progress" id="levels-progress-text">0 / 0</span>
+  </div>
+  <div class="levels-grid-wrap">
+    <div class="levels-grid" id="levels-grid"></div>
+  </div>
+</div>
 
-    <!-- ── END ── -->
-    <div id="screen-end" class="screen">
-        <div class="end-inner">
-            <h2 id="end-title" class="end-title"></h2>
-            <span id="end-level-badge" class="level-clear-badge" style="display:none"></span>
-            <p id="end-msg" class="end-msg"></p>
-            <div class="end-stats">
-                <div class="stat"><span class="stat-label">Schritte</span><span id="stat-steps" class="stat-val">0</span></div>
-                <div class="stat"><span class="stat-label">Zeit</span><span id="stat-time" class="stat-val">0s</span></div>
-            </div>
-            <div class="btn-row">
-                <button id="btn-retry" class="btn-primary">NOCHMAL</button>
-                <button id="btn-next-level" class="btn-primary purple" style="display:none">NÄCHSTES LEVEL →</button>
-            </div>
-            <button id="btn-menu" class="btn-secondary">MENÜ</button>
-        </div>
+<!-- ── GAME ── -->
+<div id="screen-game" class="screen">
+  <div class="hud">
+    <div class="hud-item">
+      <span class="hud-label">ZONE IN</span>
+      <span id="hud-countdown" class="hud-value">--</span>
     </div>
+    <div class="hud-item hud-center">
+      <span id="hud-status" class="hud-status"></span>
+      <span id="hud-level-name" class="hud-level-name"></span>
+    </div>
+    <div class="hud-item hud-right">
+      <span class="hud-label">SCHRITTE</span>
+      <span id="hud-steps" class="hud-value">0</span>
+    </div>
+  </div>
+  <div id="maze-container">
+    <canvas id="maze-canvas"></canvas>
+  </div>
+</div>
 
-    <div id="flash-overlay"></div>
+<!-- ── END ── -->
+<div id="screen-end" class="screen">
+  <div class="end-inner">
+    <h2 id="end-title" class="end-title"></h2>
+    <span id="end-level-badge" class="level-clear-badge" style="display:none"></span>
+    <p id="end-msg" class="end-msg"></p>
+    <div class="end-stats">
+      <div class="stat"><span class="stat-label">Schritte</span><span id="stat-steps" class="stat-val">0</span></div>
+      <div class="stat"><span class="stat-label">Zeit</span><span id="stat-time" class="stat-val">0s</span></div>
+    </div>
+    <div class="btn-row">
+      <button id="btn-retry" class="btn-primary">NOCHMAL</button>
+      <button id="btn-next-level" class="btn-primary purple" style="display:none">NÄCHSTES LEVEL →</button>
+    </div>
+    <button id="btn-menu" class="btn-secondary">MENÜ</button>
+  </div>
+</div>
 
-    <script>
-        'use strict';
+<div id="flash-overlay"></div>
+<div id="error-toast"></div>
 
-        // ── LEVEL DEFINITIONS (100 levels) ────────────────────────────────────────
-        // Each level: { size, difficulty, zoneSpeedMs, zoneDelayS, seed }
-        // Seed is used for deterministic generation
-        function makeLevelDefs() {
-            const levels = [];
-            for (let i = 1; i <= 100; i++) {
-                const t = (i - 1) / 99; // 0..1
-                // size: 11 → 51 (odd)
-                const rawSize = Math.round(11 + t * 38);
-                const size = rawSize % 2 === 0 ? rawSize + 1 : rawSize;
-                // difficulty: 1 → 20 (but not perfectly linear — harder in bursts)
-                const diff = Math.min(20, Math.max(1, Math.round(1 + t * 19)));
-                // zone speed: 600ms → 80ms
-                const speed = Math.round(600 - t * 520);
-                const snapSpeed = Math.round(speed / 50) * 50;
-                // delay: 6 → 2s
-                const delay = Math.max(2, Math.round(6 - t * 4));
-                levels.push({ size, difficulty: diff, zoneSpeedMs: Math.max(80, snapSpeed), zoneDelayS: delay, seed: i * 13337 });
-            }
-            return levels;
-        }
-        const LEVEL_DEFS = makeLevelDefs();
+<script>
+'use strict';
 
-        // ── PROGRESS ──────────────────────────────────────────────────────────────
-        const STORAGE_KEY = 'labyrinth_progress_v1';
+// ── LOAD LEVELS ────────────────────────────────────────────────────────────
+const LEVEL_DEFS   = (window.LABYRINTH_LEVELS) || [];
+const TOTAL_LEVELS = LEVEL_DEFS.length;
 
-        function loadProgress() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return { unlocked: 1, completed: new Set() };
-                const obj = JSON.parse(raw);
-                return { unlocked: obj.unlocked || 1, completed: new Set(obj.completed || []) };
-            } catch { return { unlocked: 1, completed: new Set() }; }
-        }
+// ── ASCII LAYOUT PARSER ────────────────────────────────────────────────────
+// Converts a layout string array into the internal grid format:
+//   0 = free, 1 = wall, 2 = start, 3 = goal
+function parseLayout(layoutLines) {
+  // Normalize: pad all rows to max width, replace space with '.'
+  const maxLen = Math.max(...layoutLines.map(r => r.length));
+  const rows = layoutLines.map(row => row.padEnd(maxLen, '#'));
 
-        function saveProgress() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    unlocked: progress.unlocked,
-                    completed: [...progress.completed],
-                }));
-            } catch { }
-        }
+  let foundS = false, foundG = false;
+  const grid = rows.map((row, r) =>
+    [...row].map((ch, c) => {
+      if (ch === 'S') { foundS = true; return 2; }
+      if (ch === 'G') { foundG = true; return 3; }
+      if (ch === '#') return 1;
+      return 0; // '.', ' ', or anything else = free
+    })
+  );
 
-        let progress = loadProgress();
+  if (!foundS) throw new Error('Kein Startpunkt S gefunden!');
+  if (!foundG) throw new Error('Kein Ziel G gefunden!');
+  return grid;
+}
 
-        // ── CONFIG ────────────────────────────────────────────────────────────────
-        let CFG = {
-            size: 25,
-            difficulty: 10,
-            zoneSpeedMs: 250,
-            zoneDelayS: 4,
-        };
+// ── MENU INIT ─────────────────────────────────────────────────────────────
+(function() {
+  const card = document.getElementById('btn-mode-levels');
+  const desc = document.getElementById('menu-level-desc');
+  if (TOTAL_LEVELS === 0) {
+    card.classList.add('disabled');
+    desc.textContent = 'Keine Level gefunden. levels.js im selben Ordner ablegen.';
+  } else {
+    desc.textContent = TOTAL_LEVELS + ' Level — schalte sie nacheinander frei.';
+  }
+})();
 
-        let currentMode = 'random'; // 'random' | 'level'
-        let currentLevel = 1;        // 1-based
+// ── PROGRESS ──────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'labyrinth_progress_v2';
+function loadProgress() {
+  try {
+    const o = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    return { unlocked: o.unlocked || 1, completed: new Set(o.completed || []) };
+  } catch { return { unlocked: 1, completed: new Set() }; }
+}
+function saveProgress() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ unlocked: progress.unlocked, completed: [...progress.completed] })); } catch {}
+}
+let progress = loadProgress();
 
-        const COLOR = {
-            wall: '#1c1c24',
-            free: '#0f0f14',
-            start: '#22c55e',
-            goal: '#3b82f6',
-            zone: '#7f1d1d',
-            player: '#facc15',
-        };
+// ── RANDOM CONFIG ──────────────────────────────────────────────────────────
+let CFG = { size: 25, difficulty: 10, zoneSpeedMs: 250, zoneDelayS: 4 };
+let currentMode  = 'random';
+let currentLevel = 1;
 
-        // ── STATE ─────────────────────────────────────────────────────────────────
-        let lab, rows, cols, cellSize;
-        let playerGrid;
-        let goalPos;
-        let zone, frontier;
-        let steps, startTime;
-        let zoneActive, zoneStartTime, lastZoneExpand;
-        let animFrame;
-        let gameRunning = false;
+const COLOR = { wall:'#1c1c24', free:'#0f0f14', start:'#22c55e', goal:'#3b82f6', zone:'#7f1d1d', player:'#facc15' };
 
-        const keysHeld = new Set();
-        let lastMoveTime = 0;
-        const MOVE_REPEAT_MS = 40;
+// ── GAME STATE ─────────────────────────────────────────────────────────────
+let lab, rows, cols, cellSize;
+let playerGrid, goalPos;
+let zone, frontier;
+let steps, startTime;
+let zoneActive, zoneStartTime, lastZoneExpand;
+let animFrame;
+let gameRunning = false;
 
-        // ── DOM ───────────────────────────────────────────────────────────────────
-        const screens = {
-            menu: document.getElementById('screen-menu'),
-            random: document.getElementById('screen-random'),
-            levels: document.getElementById('screen-levels'),
-            game: document.getElementById('screen-game'),
-            end: document.getElementById('screen-end'),
-        };
+const keysHeld = new Set();
+let lastMoveTime = 0;
+const MOVE_REPEAT_MS = 40;
 
-        const canvas = document.getElementById('maze-canvas');
-        const ctx = canvas.getContext('2d');
-        const hudCountdown = document.getElementById('hud-countdown');
-        const hudSteps = document.getElementById('hud-steps');
-        const hudStatus = document.getElementById('hud-status');
-        const hudLevelLabel = document.getElementById('hud-level-label');
-        const endTitle = document.getElementById('end-title');
-        const endMsg = document.getElementById('end-msg');
-        const endLvlBadge = document.getElementById('end-level-badge');
-        const statSteps = document.getElementById('stat-steps');
-        const statTime = document.getElementById('stat-time');
-        const btnNextLevel = document.getElementById('btn-next-level');
-        const btnRetry = document.getElementById('btn-retry');
+// ── DOM ────────────────────────────────────────────────────────────────────
+const screens = {
+  menu: document.getElementById('screen-menu'),
+  random: document.getElementById('screen-random'),
+  levels: document.getElementById('screen-levels'),
+  game: document.getElementById('screen-game'),
+  end: document.getElementById('screen-end'),
+};
+const canvas       = document.getElementById('maze-canvas');
+const ctx          = canvas.getContext('2d');
+const hudCountdown = document.getElementById('hud-countdown');
+const hudSteps     = document.getElementById('hud-steps');
+const hudStatus    = document.getElementById('hud-status');
+const hudLevelName = document.getElementById('hud-level-name');
+const endTitle     = document.getElementById('end-title');
+const endMsg       = document.getElementById('end-msg');
+const endLvlBadge  = document.getElementById('end-level-badge');
+const statSteps    = document.getElementById('stat-steps');
+const statTime     = document.getElementById('stat-time');
+const btnNextLevel = document.getElementById('btn-next-level');
+const btnRetry     = document.getElementById('btn-retry');
+const flash        = document.getElementById('flash-overlay');
+const errorToast   = document.getElementById('error-toast');
 
-        const flash = document.getElementById('flash-overlay');
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function showError(msg) {
+  errorToast.textContent = '⚠ ' + msg;
+  errorToast.classList.add('show');
+  setTimeout(() => errorToast.classList.remove('show'), 3500);
+}
 
-        // ── NAVIGATION ────────────────────────────────────────────────────────────
-        function showScreen(name) {
-            Object.values(screens).forEach(s => s.classList.remove('active'));
-            screens[name].classList.add('active');
-        }
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
 
-        document.getElementById('btn-mode-random').addEventListener('click', () => showScreen('random'));
-        document.getElementById('btn-mode-levels').addEventListener('click', () => { buildLevelGrid(); showScreen('levels'); });
-        document.getElementById('btn-back-random').addEventListener('click', () => showScreen('menu'));
-        document.getElementById('btn-back-levels').addEventListener('click', () => showScreen('menu'));
-        document.getElementById('btn-start-random').addEventListener('click', () => { currentMode = 'random'; startGame(); });
-        document.getElementById('btn-menu').addEventListener('click', () => showScreen('menu'));
-        document.getElementById('btn-retry').addEventListener('click', () => {
-            if (currentMode === 'level') startLevelGame(currentLevel);
-            else startGame();
-        });
-        document.getElementById('btn-next-level').addEventListener('click', () => {
-            if (currentLevel < 100) startLevelGame(currentLevel + 1);
-            else showScreen('levels');
-        });
+document.getElementById('btn-mode-random').addEventListener('click', () => showScreen('random'));
+document.getElementById('btn-mode-levels').addEventListener('click', () => { buildLevelGrid(); showScreen('levels'); });
+document.getElementById('btn-back-random').addEventListener('click', () => showScreen('menu'));
+document.getElementById('btn-back-levels').addEventListener('click', () => showScreen('menu'));
+document.getElementById('btn-start-random').addEventListener('click', () => { currentMode = 'random'; startGame(); });
+document.getElementById('btn-menu').addEventListener('click', () => showScreen('menu'));
+btnRetry.addEventListener('click', () => { currentMode === 'level' ? startLevelGame(currentLevel) : startGame(); });
+btnNextLevel.addEventListener('click', () => {
+  if (currentLevel < TOTAL_LEVELS) startLevelGame(currentLevel + 1);
+  else { buildLevelGrid(); showScreen('levels'); }
+});
 
-        // ── SLIDERS ───────────────────────────────────────────────────────────────
-        function bindSlider(id, valId, cfgKey) {
-            const el = document.getElementById(id);
-            const vl = document.getElementById(valId);
-            el.addEventListener('input', () => { CFG[cfgKey] = parseInt(el.value); vl.textContent = el.value; });
-        }
-        bindSlider('cfg-size', 'cfg-size-val', 'size');
-        bindSlider('cfg-diff', 'cfg-diff-val', 'difficulty');
-        bindSlider('cfg-speed', 'cfg-speed-val', 'zoneSpeedMs');
-        bindSlider('cfg-delay', 'cfg-delay-val', 'zoneDelayS');
+// ── SLIDERS ────────────────────────────────────────────────────────────────
+function bindSlider(id, valId, key) {
+  const el = document.getElementById(id), vl = document.getElementById(valId);
+  el.addEventListener('input', () => { CFG[key] = parseInt(el.value); vl.textContent = el.value; });
+}
+bindSlider('cfg-size',  'cfg-size-val',  'size');
+bindSlider('cfg-diff',  'cfg-diff-val',  'difficulty');
+bindSlider('cfg-speed', 'cfg-speed-val', 'zoneSpeedMs');
+bindSlider('cfg-delay', 'cfg-delay-val', 'zoneDelayS');
 
-        // ── LEVEL GRID ────────────────────────────────────────────────────────────
-        function buildLevelGrid() {
-            const grid = document.getElementById('levels-grid');
-            grid.innerHTML = '';
-            const completed = progress.completed.size;
-            document.getElementById('levels-progress-text').textContent = completed + ' / 100';
+// ── LEVEL GRID ─────────────────────────────────────────────────────────────
+function speedLabel(ms) {
+  if (ms <= 150) return ['fast',   'Schnell'];
+  if (ms <= 350) return ['medium', 'Mittel'];
+  return              ['slow',   'Langsam'];
+}
 
-            for (let i = 1; i <= 100; i++) {
-                const btn = document.createElement('button');
-                btn.className = 'level-btn';
-                const isCompleted = progress.completed.has(i);
-                const isUnlocked = i <= progress.unlocked;
+function buildLevelGrid() {
+  const grid = document.getElementById('levels-grid');
+  grid.innerHTML = '';
 
-                if (isCompleted) btn.classList.add('completed');
-                else if (isUnlocked) btn.classList.add('unlocked');
-                else btn.classList.add('locked');
+  if (TOTAL_LEVELS === 0) {
+    grid.innerHTML = '<div class="no-levels-msg">Keine Level gefunden.<br>Lege <code>levels.js</code> in denselben Ordner wie <code>labyrinth.html</code>.</div>';
+    document.getElementById('levels-progress-text').textContent = '0 / 0';
+    return;
+  }
 
-                btn.innerHTML = String(i);
-                if (isCompleted) btn.innerHTML += '<span class="star">★</span>';
-                if (!isUnlocked) btn.innerHTML += '<span class="lock-icon">🔒</span>';
+  document.getElementById('levels-progress-text').textContent = progress.completed.size + ' / ' + TOTAL_LEVELS;
 
-                if (isUnlocked) {
-                    btn.addEventListener('click', () => startLevelGame(i));
-                }
-                grid.appendChild(btn);
-            }
-        }
+  for (let i = 1; i <= TOTAL_LEVELS; i++) {
+    const def = LEVEL_DEFS[i - 1];
+    const isCompleted = progress.completed.has(i);
+    const isUnlocked  = i <= progress.unlocked;
+    const isHandmade  = !!def.layout;
 
-        // ── SEEDED RNG ────────────────────────────────────────────────────────────
-        // Simple mulberry32 for reproducible mazes
-        function makePrng(seed) {
-            let s = seed >>> 0;
-            return function () {
-                s = (s + 0x6d2b79f5) >>> 0;
-                let t = Math.imul(s ^ (s >>> 15), 1 | s);
-                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) >>> 0;
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
-        }
+    const card = document.createElement('div');
+    card.className = 'level-card ' + (isCompleted ? 'completed' : isUnlocked ? 'unlocked' : 'locked');
 
-        // ── MAZE GENERATOR ────────────────────────────────────────────────────────
-        function generateMaze(size, difficulty, rng) {
-            if (!rng) rng = Math.random.bind(Math);
-            if (size % 2 === 0) size++;
-            if (size < 5) size = 5;
-            difficulty = Math.max(1, Math.min(20, difficulty));
-            const r = size, c = size;
-            const maze = Array.from({ length: r }, () => new Array(c).fill(1));
-            function carve(row, col) {
-                maze[row][col] = 0;
-                const dirs = [[0, 2], [0, -2], [2, 0], [-2, 0]].sort(() => rng() - 0.5);
-                for (const [dr, dc] of dirs) {
-                    const nr = row + dr, nc = col + dc;
-                    if (nr > 0 && nr < r - 1 && nc > 0 && nc < c - 1 && maze[nr][nc] === 1) {
-                        maze[row + dr / 2][col + dc / 2] = 0;
-                        carve(nr, nc);
-                    }
-                }
-            }
-            carve(1, 1);
-            const extra = Math.round(((21 - difficulty) / 20) * r * c * 0.05);
-            for (let i = 0; i < extra; i++) {
-                const rr = 1 + Math.floor(rng() * (r - 2));
-                const cc = 1 + Math.floor(rng() * (c - 2));
-                if (maze[rr][cc] !== 1) continue;
-                let free = 0;
-                for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]])
-                    if (maze[rr + dr]?.[cc + dc] === 0) free++;
-                if (free >= 2) maze[rr][cc] = 0;
-            }
-            maze[1][1] = 2;
-            maze[r - 2][c - 2] = 3;
-            return maze;
-        }
+    const [spClass, spText] = speedLabel(def.zoneSpeedMs);
+    const sizeStr = isHandmade
+      ? (def.layout[0].length + '×' + def.layout.length)
+      : (def.size + '×' + def.size);
 
-        // ── HELPERS ───────────────────────────────────────────────────────────────
-        function cellKey(r, c) { return r * 10000 + c; }
+    card.innerHTML =
+      `<span class="level-num">${i}</span>` +
+      `<div class="level-info">` +
+        `<div class="level-name">${def.name || 'Level ' + i}</div>` +
+        `<div class="level-meta">` +
+          `<span>${sizeStr}</span>` +
+          (isHandmade ? `<span class="pill hand">✏ Handgemacht</span>` : `<span class="pill ${spClass}">${spText}</span>`) +
+          `<span>⏱ ${def.zoneDelayS}s</span>` +
+        `</div>` +
+      `</div>` +
+      (isCompleted ? `<span class="level-star">★</span>` : '') +
+      (!isUnlocked  ? `<span class="level-lock">🔒</span>` : '');
 
-        function findCell(val) {
-            for (let r = 0; r < rows; r++)
-                for (let c = 0; c < cols; c++)
-                    if (lab[r][c] === val) return { r, c };
-            throw new Error('Nicht gefunden: ' + val);
-        }
+    if (isUnlocked) card.addEventListener('click', () => startLevelGame(i));
+    grid.appendChild(card);
+  }
+}
 
-        function triggerFlash(cls) {
-            flash.className = cls;
-            setTimeout(() => { flash.className = ''; }, 350);
-        }
+// ── SEEDED RNG ─────────────────────────────────────────────────────────────
+function makePrng(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) >>> 0;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
-        function paintCell(c, r) {
-            if (zone.has(cellKey(r, c))) {
-                ctx.fillStyle = COLOR.zone;
-            } else {
-                const v = lab[r][c];
-                ctx.fillStyle = v === 1 ? COLOR.wall : v === 2 ? COLOR.start : v === 3 ? COLOR.goal : COLOR.free;
-            }
-            ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
-        }
+// ── MAZE GENERATOR ─────────────────────────────────────────────────────────
+function generateMaze(size, difficulty, rng) {
+  if (!rng) rng = Math.random.bind(Math);
+  if (size % 2 === 0) size++;
+  if (size < 5) size = 5;
+  difficulty = Math.max(1, Math.min(20, difficulty));
+  const r = size, c = size;
+  const maze = Array.from({ length: r }, () => new Array(c).fill(1));
+  function carve(row, col) {
+    maze[row][col] = 0;
+    const dirs = [[0,2],[0,-2],[2,0],[-2,0]].sort(() => rng() - .5);
+    for (const [dr, dc] of dirs) {
+      const nr = row+dr, nc = col+dc;
+      if (nr>0 && nr<r-1 && nc>0 && nc<c-1 && maze[nr][nc]===1) {
+        maze[row+dr/2][col+dc/2] = 0;
+        carve(nr, nc);
+      }
+    }
+  }
+  carve(1, 1);
+  const extra = Math.round(((21-difficulty)/20)*r*c*.05);
+  for (let i = 0; i < extra; i++) {
+    const rr = 1+Math.floor(rng()*(r-2)), cc = 1+Math.floor(rng()*(c-2));
+    if (maze[rr][cc] !== 1) continue;
+    let free = 0;
+    for (const [dr,dc] of [[0,1],[0,-1],[1,0],[-1,0]])
+      if (maze[rr+dr]?.[cc+dc] === 0) free++;
+    if (free >= 2) maze[rr][cc] = 0;
+  }
+  maze[1][1] = 2;
+  maze[r-2][c-2] = 3;
+  return maze;
+}
 
-        function drawPlayer() {
-            ctx.fillStyle = COLOR.player;
-            ctx.fillRect(playerGrid.c * cellSize, playerGrid.r * cellSize, cellSize, cellSize);
-        }
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function cellKey(r, c) { return r * 10000 + c; }
 
-        // ── START ─────────────────────────────────────────────────────────────────
-        function startLevelGame(levelNum) {
-            currentMode = 'level';
-            currentLevel = levelNum;
-            const def = LEVEL_DEFS[levelNum - 1];
-            const rng = makePrng(def.seed);
-            showScreen('game');
-            _startGameWithConfig(def, rng);
-        }
+function findCell(val) {
+  for (let r = 0; r < rows; r++)
+    for (let c = 0; c < cols; c++)
+      if (lab[r][c] === val) return { r, c };
+  return null;
+}
 
-        function startGame() {
-            currentMode = 'random';
-            showScreen('game');
-            _startGameWithConfig(CFG, null);
-        }
+function triggerFlash(cls) {
+  flash.className = cls;
+  setTimeout(() => { flash.className = ''; }, 350);
+}
 
-        function _startGameWithConfig(cfg, rng) {
-            cancelAnimationFrame(animFrame);
-            gameRunning = false;
-            keysHeld.clear();
+function paintCell(c, r) {
+  if (zone.has(cellKey(r, c))) {
+    ctx.fillStyle = COLOR.zone;
+  } else {
+    const v = lab[r][c];
+    ctx.fillStyle = v===1 ? COLOR.wall : v===2 ? COLOR.start : v===3 ? COLOR.goal : COLOR.free;
+  }
+  ctx.fillRect(c*cellSize, r*cellSize, cellSize, cellSize);
+}
 
-            lab = generateMaze(cfg.size, cfg.difficulty, rng);
-            rows = lab.length;
-            cols = lab[0].length;
+function drawPlayer() {
+  ctx.fillStyle = COLOR.player;
+  ctx.fillRect(playerGrid.c*cellSize, playerGrid.r*cellSize, cellSize, cellSize);
+}
 
-            const maxW = window.innerWidth - 16;
-            const maxH = window.innerHeight - 60;
-            cellSize = Math.max(4, Math.floor(Math.min(maxW / cols, maxH / rows)));
-            canvas.width = cols * cellSize;
-            canvas.height = rows * cellSize;
+// ── START ──────────────────────────────────────────────────────────────────
+function startLevelGame(levelNum) {
+  currentMode  = 'level';
+  currentLevel = levelNum;
+  const def    = LEVEL_DEFS[levelNum - 1];
 
-            playerGrid = findCell(2);
-            goalPos = findCell(3);
+  let grid;
+  if (def.layout) {
+    // Handgezeichnetes Layout parsen
+    try {
+      grid = parseLayout(def.layout);
+    } catch(e) {
+      showError('Level ' + levelNum + ': ' + e.message);
+      return;
+    }
+    showScreen('game');
+    _startGameWithGrid(grid, def);
+  } else {
+    // Zufällig generieren
+    const seed = def.seed != null ? def.seed : levelNum * 13337;
+    grid = generateMaze(def.size || 21, def.difficulty || 10, makePrng(seed));
+    showScreen('game');
+    _startGameWithGrid(grid, def);
+  }
+}
 
-            zone = new Set();
-            zone.add(cellKey(playerGrid.r, playerGrid.c));
-            frontier = [{ r: playerGrid.r, c: playerGrid.c }];
+function startGame() {
+  currentMode = 'random';
+  const grid = generateMaze(CFG.size, CFG.difficulty, null);
+  showScreen('game');
+  _startGameWithGrid(grid, CFG);
+}
 
-            steps = 0; startTime = Date.now();
-            zoneActive = false;
-            zoneStartTime = Date.now() + cfg.zoneDelayS * 1000;
-            lastZoneExpand = zoneStartTime;
+function _startGameWithGrid(grid, cfg) {
+  cancelAnimationFrame(animFrame);
+  gameRunning = false;
+  keysHeld.clear();
 
-            hudSteps.textContent = '0';
-            hudStatus.textContent = '';
-            hudStatus.classList.remove('danger');
-            hudCountdown.className = 'hud-value';
+  lab  = grid;
+  rows = lab.length;
+  cols = lab[0].length;
 
-            if (currentMode === 'level') {
-                hudLevelLabel.textContent = 'LEVEL ' + currentLevel + ' / 100';
-                hudCountdown.classList.add('purple');
-            } else {
-                hudLevelLabel.textContent = '';
-                hudCountdown.classList.remove('purple');
-            }
+  const maxW = window.innerWidth - 16;
+  const maxH = window.innerHeight - 60;
+  cellSize = Math.max(3, Math.floor(Math.min(maxW / cols, maxH / rows)));
+  canvas.width  = cols * cellSize;
+  canvas.height = rows * cellSize;
 
-            renderFull();
-            gameRunning = true;
-            lastMoveTime = 0;
-            animFrame = requestAnimationFrame(gameLoop);
-        }
+  playerGrid = findCell(2);
+  goalPos    = findCell(3);
 
-        // ── INPUT ─────────────────────────────────────────────────────────────────
-        const KEY_DIR = {
-            ArrowUp: [0, -1], KeyW: [0, -1],
-            ArrowDown: [0, 1], KeyS: [0, 1],
-            ArrowLeft: [-1, 0], KeyA: [-1, 0],
-            ArrowRight: [1, 0], KeyD: [1, 0],
-        };
+  if (!playerGrid || !goalPos) {
+    showError('Kein Start (S) oder Ziel (G) im Layout!');
+    showScreen('levels');
+    return;
+  }
 
-        document.addEventListener('keydown', e => {
-            if (!gameRunning) return;
-            if (KEY_DIR[e.code]) { e.preventDefault(); keysHeld.add(e.code); }
-        });
-        document.addEventListener('keyup', e => keysHeld.delete(e.code));
+  zone = new Set();
+  zone.add(cellKey(playerGrid.r, playerGrid.c));
+  frontier = [{ r: playerGrid.r, c: playerGrid.c }];
 
-        let touchStart = null;
-        document.addEventListener('touchstart', e => { touchStart = e.touches[0]; }, { passive: true });
-        document.addEventListener('touchend', e => {
-            if (!gameRunning || !touchStart) return;
-            const dx = e.changedTouches[0].clientX - touchStart.clientX;
-            const dy = e.changedTouches[0].clientY - touchStart.clientY;
-            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
-            if (Math.abs(dx) > Math.abs(dy)) tryMove(dx > 0 ? 1 : -1, 0);
-            else tryMove(0, dy > 0 ? 1 : -1);
-            touchStart = null;
-        }, { passive: true });
+  steps = 0; startTime = Date.now();
+  zoneActive     = false;
+  zoneStartTime  = Date.now() + cfg.zoneDelayS * 1000;
+  lastZoneExpand = zoneStartTime;
 
-        function tryMove(dx, dy) {
-            const nr = playerGrid.r + dy;
-            const nc = playerGrid.c + dx;
-            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) return;
-            if (lab[nr][nc] === 1) return;
+  hudSteps.textContent = '0';
+  hudStatus.textContent = '';
+  hudStatus.classList.remove('danger');
+  hudCountdown.className = 'hud-value';
 
-            const prev = { ...playerGrid };
-            playerGrid = { r: nr, c: nc };
-            steps++;
-            hudSteps.textContent = steps;
+  if (currentMode === 'level') {
+    const def = LEVEL_DEFS[currentLevel - 1];
+    hudLevelName.textContent = (def.name || 'Level ' + currentLevel).toUpperCase();
+    hudCountdown.classList.add('purple');
+  } else {
+    hudLevelName.textContent = '';
+    hudCountdown.classList.remove('purple');
+  }
 
-            paintCell(prev.c, prev.r);
-            drawPlayer();
+  renderFull();
+  gameRunning  = true;
+  lastMoveTime = 0;
+  animFrame = requestAnimationFrame(gameLoop);
+}
 
-            lastMoveTime = Date.now();
-            checkCell();
-        }
+// ── INPUT ──────────────────────────────────────────────────────────────────
+const KEY_DIR = {
+  ArrowUp:[0,-1], KeyW:[0,-1], ArrowDown:[0,1], KeyS:[0,1],
+  ArrowLeft:[-1,0], KeyA:[-1,0], ArrowRight:[1,0], KeyD:[1,0],
+};
 
-        // ── GAME LOOP ─────────────────────────────────────────────────────────────
-        function gameLoop() {
-            if (!gameRunning) return;
-            const now = Date.now();
-            const cfg = currentMode === 'level' ? LEVEL_DEFS[currentLevel - 1] : CFG;
+document.addEventListener('keydown', e => {
+  if (!gameRunning) return;
+  if (KEY_DIR[e.code]) { e.preventDefault(); keysHeld.add(e.code); }
+});
+document.addEventListener('keyup', e => keysHeld.delete(e.code));
 
-            if (!zoneActive) {
-                const rem = Math.ceil((zoneStartTime - now) / 1000);
-                hudCountdown.textContent = rem > 0 ? rem + 's' : '0s';
-                if (rem <= 2) { hudStatus.textContent = 'ZONE KOMMT'; hudStatus.classList.add('danger'); }
-                if (now >= zoneStartTime) { zoneActive = true; hudCountdown.textContent = 'AKTIV'; }
-            } else {
-                hudCountdown.textContent = 'AKTIV';
-            }
+let touchStart = null;
+document.addEventListener('touchstart', e => { touchStart = e.touches[0]; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!gameRunning || !touchStart) return;
+  const dx = e.changedTouches[0].clientX - touchStart.clientX;
+  const dy = e.changedTouches[0].clientY - touchStart.clientY;
+  if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+  Math.abs(dx) > Math.abs(dy) ? tryMove(dx > 0 ? 1 : -1, 0) : tryMove(0, dy > 0 ? 1 : -1);
+  touchStart = null;
+}, { passive: true });
 
-            if (zoneActive && frontier.length > 0 && (now - lastZoneExpand) >= cfg.zoneSpeedMs) {
-                lastZoneExpand = now;
-                expandZone();
-                if (!gameRunning) return;
-            }
+function tryMove(dx, dy) {
+  const nr = playerGrid.r + dy, nc = playerGrid.c + dx;
+  if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) return;
+  if (lab[nr][nc] === 1) return;
+  const prev = { ...playerGrid };
+  playerGrid = { r: nr, c: nc };
+  steps++;
+  hudSteps.textContent = steps;
+  paintCell(prev.c, prev.r);
+  drawPlayer();
+  lastMoveTime = Date.now();
+  checkCell();
+}
 
-            if (keysHeld.size > 0 && (now - lastMoveTime) >= MOVE_REPEAT_MS) {
-                for (const code of keysHeld) {
-                    const dir = KEY_DIR[code];
-                    if (dir) { tryMove(dir[0], dir[1]); break; }
-                }
-            }
+// ── GAME LOOP ──────────────────────────────────────────────────────────────
+function gameLoop() {
+  if (!gameRunning) return;
+  const now = Date.now();
+  const cfg = currentMode === 'level' ? LEVEL_DEFS[currentLevel - 1] : CFG;
 
-            animFrame = requestAnimationFrame(gameLoop);
-        }
+  if (!zoneActive) {
+    const rem = Math.ceil((zoneStartTime - now) / 1000);
+    hudCountdown.textContent = rem > 0 ? rem + 's' : '0s';
+    if (rem <= 2) { hudStatus.textContent = 'ZONE KOMMT'; hudStatus.classList.add('danger'); }
+    if (now >= zoneStartTime) { zoneActive = true; hudCountdown.textContent = 'AKTIV'; }
+  } else {
+    hudCountdown.textContent = 'AKTIV';
+  }
 
-        function checkCell() {
-            const { r, c } = playerGrid;
-            if (r === goalPos.r && c === goalPos.c) {
-                triggerFlash('green');
-                gameRunning = false;
-                setTimeout(() => endGame(true), 150);
-                return;
-            }
-            if (zone.has(cellKey(r, c))) {
-                triggerFlash('red');
-                gameRunning = false;
-                setTimeout(() => endGame(false), 200);
-            }
-        }
+  if (zoneActive && frontier.length > 0 && (now - lastZoneExpand) >= cfg.zoneSpeedMs) {
+    lastZoneExpand = now;
+    expandZone();
+    if (!gameRunning) return;
+  }
 
-        // ── ZONE ──────────────────────────────────────────────────────────────────
-        function expandZone() {
-            const next = [];
-            for (const { r, c } of frontier) {
-                for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
-                    const nr = r + dr, nc = c + dc;
-                    if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-                    if (lab[nr][nc] === 1) continue;
-                    const k = cellKey(nr, nc);
-                    if (zone.has(k)) continue;
-                    zone.add(k);
-                    next.push({ r: nr, c: nc });
+  if (keysHeld.size > 0 && (now - lastMoveTime) >= MOVE_REPEAT_MS) {
+    for (const code of keysHeld) {
+      const dir = KEY_DIR[code];
+      if (dir) { tryMove(dir[0], dir[1]); break; }
+    }
+  }
 
-                    if (nr === playerGrid.r && nc === playerGrid.c) {
-                        ctx.fillStyle = COLOR.zone;
-                        ctx.fillRect(nc * cellSize, nr * cellSize, cellSize, cellSize);
-                        triggerFlash('red');
-                        gameRunning = false;
-                        setTimeout(() => endGame(false), 200);
-                        return;
-                    }
+  animFrame = requestAnimationFrame(gameLoop);
+}
 
-                    if (lab[nr][nc] !== 3) {
-                        ctx.fillStyle = COLOR.zone;
-                        ctx.fillRect(nc * cellSize, nr * cellSize, cellSize, cellSize);
-                    }
-                }
-            }
-            drawPlayer();
-            frontier = next;
-        }
+function checkCell() {
+  const { r, c } = playerGrid;
+  if (r === goalPos.r && c === goalPos.c) { triggerFlash('green'); gameRunning = false; setTimeout(() => endGame(true), 150); return; }
+  if (zone.has(cellKey(r, c))) { triggerFlash('red'); gameRunning = false; setTimeout(() => endGame(false), 200); }
+}
 
-        // ── RENDER ────────────────────────────────────────────────────────────────
-        function renderFull() {
-            for (let r = 0; r < rows; r++)
-                for (let c = 0; c < cols; c++)
-                    paintCell(c, r);
-            drawPlayer();
-        }
+// ── ZONE ───────────────────────────────────────────────────────────────────
+function expandZone() {
+  const next = [];
+  for (const { r, c } of frontier) {
+    for (const [dr, dc] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+      const nr = r+dr, nc = c+dc;
+      if (nr<0||nr>=rows||nc<0||nc>=cols||lab[nr][nc]===1) continue;
+      const k = cellKey(nr, nc);
+      if (zone.has(k)) continue;
+      zone.add(k); next.push({ r:nr, c:nc });
+      if (nr === playerGrid.r && nc === playerGrid.c) {
+        ctx.fillStyle = COLOR.zone; ctx.fillRect(nc*cellSize, nr*cellSize, cellSize, cellSize);
+        triggerFlash('red'); gameRunning = false; setTimeout(() => endGame(false), 200); return;
+      }
+      if (lab[nr][nc] !== 3) { ctx.fillStyle = COLOR.zone; ctx.fillRect(nc*cellSize, nr*cellSize, cellSize, cellSize); }
+    }
+  }
+  drawPlayer();
+  frontier = next;
+}
 
-        // ── END ───────────────────────────────────────────────────────────────────
-        function endGame(won) {
-            cancelAnimationFrame(animFrame);
-            keysHeld.clear();
-            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function renderFull() {
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) paintCell(c, r);
+  drawPlayer();
+}
 
-            // Update progress for level mode
-            let unlockedNew = false;
-            if (won && currentMode === 'level') {
-                progress.completed.add(currentLevel);
-                if (currentLevel >= progress.unlocked && currentLevel < 100) {
-                    progress.unlocked = currentLevel + 1;
-                    unlockedNew = true;
-                } else if (currentLevel >= progress.unlocked) {
-                    progress.unlocked = currentLevel;
-                }
-                saveProgress();
-            }
+// ── END ────────────────────────────────────────────────────────────────────
+function endGame(won) {
+  cancelAnimationFrame(animFrame);
+  keysHeld.clear();
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-            endTitle.textContent = won ? 'GESCHAFFT' : 'ERWISCHT';
-            endTitle.className = 'end-title ' + (won ? 'win' : 'lose');
-            statSteps.textContent = steps;
-            statTime.textContent = elapsed + 's';
+  let unlockedNew = false;
+  if (won && currentMode === 'level') {
+    progress.completed.add(currentLevel);
+    if (currentLevel >= progress.unlocked && currentLevel < TOTAL_LEVELS) { progress.unlocked = currentLevel + 1; unlockedNew = true; }
+    else if (currentLevel >= progress.unlocked) { progress.unlocked = currentLevel; }
+    saveProgress();
+  }
 
-            if (currentMode === 'level') {
-                endLvlBadge.style.display = '';
-                endLvlBadge.textContent = 'LEVEL ' + currentLevel + ' / 100';
-                if (won) {
-                    endMsg.textContent = unlockedNew
-                        ? 'Level ' + (currentLevel + 1) + ' freigeschaltet! 🔓'
-                        : 'Du hast das Level bezwungen!';
-                    btnNextLevel.style.display = currentLevel < 100 ? '' : 'none';
-                    btnNextLevel.textContent = currentLevel < 100 ? 'NÄCHSTES LEVEL →' : 'ALLE LEVELS GESCHAFFT!';
-                    btnRetry.textContent = 'NOCHMAL';
-                } else {
-                    endMsg.textContent = 'Die Zone hat dich verschluckt.';
-                    btnNextLevel.style.display = 'none';
-                    btnRetry.textContent = 'NOCHMAL VERSUCHEN';
-                }
-            } else {
-                endLvlBadge.style.display = 'none';
-                endMsg.textContent = won ? 'Du hast das Labyrinth bezwungen!' : 'Die Zone hat dich verschluckt.';
-                btnNextLevel.style.display = 'none';
-                btnRetry.textContent = 'NOCHMAL';
-            }
+  endTitle.textContent  = won ? 'GESCHAFFT' : 'ERWISCHT';
+  endTitle.className    = 'end-title ' + (won ? 'win' : 'lose');
+  statSteps.textContent = steps;
+  statTime.textContent  = elapsed + 's';
 
-            setTimeout(() => showScreen('end'), 300);
-        }
-    </script>
+  if (currentMode === 'level') {
+    const def = LEVEL_DEFS[currentLevel - 1];
+    endLvlBadge.style.display = '';
+    endLvlBadge.textContent = (def.name || 'Level ' + currentLevel).toUpperCase();
+    if (won) {
+      const hasNext = currentLevel < TOTAL_LEVELS;
+      endMsg.textContent = unlockedNew && hasNext
+        ? '"' + (LEVEL_DEFS[currentLevel].name || 'Level '+(currentLevel+1)) + '" freigeschaltet! 🔓'
+        : !hasNext ? 'Alle Level geschafft! 🏆' : 'Level bezwungen!';
+      btnNextLevel.style.display = hasNext ? '' : 'none';
+      btnNextLevel.textContent = 'NÄCHSTES LEVEL →';
+      btnRetry.textContent = 'NOCHMAL';
+    } else {
+      endMsg.textContent = 'Die Zone hat dich verschluckt.';
+      btnNextLevel.style.display = 'none';
+      btnRetry.textContent = 'NOCHMAL VERSUCHEN';
+    }
+  } else {
+    endLvlBadge.style.display = 'none';
+    endMsg.textContent = won ? 'Du hast das Labyrinth bezwungen!' : 'Die Zone hat dich verschluckt.';
+    btnNextLevel.style.display = 'none';
+    btnRetry.textContent = 'NOCHMAL';
+  }
+
+  setTimeout(() => showScreen('end'), 300);
+}
+</script>
 </body>
 </html>
