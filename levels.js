@@ -1,22 +1,22 @@
 /**
  * +----------------------------------------------------------------------+
- * ¦                   LABYRINTH — LEVEL DATEI                          ¦
- * ¦  Zeichne deine Level als ASCII-Karte oder nutze den Zufalls-Modus  ¦
+ * Â¦                   LABYRINTH â€” LEVEL DATEI                          Â¦
+ * Â¦  Zeichne deine Level als ASCII-Karte oder nutze den Zufalls-Modus  Â¦
  * +----------------------------------------------------------------------+
  *
  * FELDER PRO LEVEL:
  *
- *   name        — Anzeigename des Levels
+ *   name        â€” Anzeigename des Levels
  *
- *   zoneSpeedMs — Wie schnell die Zone sich ausbreitet (ms pro Schritt)
+ *   zoneSpeedMs â€” Wie schnell die Zone sich ausbreitet (ms pro Schritt)
  *                 800 = sehr langsam  |  400 = mittel  |  100 = brutal
  *
- *   zoneDelayS  — Sekunden Vorsprung bevor die Zone startet
+ *   zoneDelayS  â€” Sekunden Vorsprung bevor die Zone startet
  *                 1 = sofort  |  5 = normal  |  15 = entspannt
  *
  * -- LAYOUT (selbst zeichnen) ------------------------------------------
  *
- *   layout      — Das Labyrinth als Array von Strings (eine Zeile = ein String)
+ *   layout      â€” Das Labyrinth als Array von Strings (eine Zeile = ein String)
  *
  *   Zeichen:
  *     #   Wand
@@ -27,16 +27,16 @@
  *   Tipps:
  *   - Rand komplett mit # ummauern
  *   - Es muss einen Weg von S nach G geben
- *   - Beliebige Größe — das Spiel skaliert automatisch
+ *   - Beliebige GrÃ¶ÃŸe â€” das Spiel skaliert automatisch
  *   - Alle Zeilen sollten gleich lang sein
  *
  * -- ZUFALLS-LAYOUT ----------------------------------------------------
  *
- *   Wenn du kein layout angibst, wird es zufällig generiert:
+ *   Wenn du kein layout angibst, wird es zufÃ¤llig generiert:
  *
- *   size        — Labyrinthgröße (ungerade Zahl, 11–51)
- *   difficulty  — Wanddichte (1 = offen, 20 = eng)
- *   seed        — Zufallsseed (gleiche Zahl = immer gleiche Karte)
+ *   size        â€” LabyrinthgrÃ¶ÃŸe (ungerade Zahl, 11â€“51)
+ *   difficulty  â€” Wanddichte (1 = offen, 20 = eng)
+ *   seed        â€” Zufallsseed (gleiche Zahl = immer gleiche Karte)
  */
 
 const LEVELS = [
@@ -187,7 +187,7 @@ const LEVELS = [
   },
 
   {
-    name:        "Großes Labyrinth",
+    name:        "GroÃŸes Labyrinth",
     size:        33,
     difficulty:  16,
     zoneSpeedMs: 200,
@@ -215,5 +215,5 @@ const LEVELS = [
 
 ];
 
-// -- WICHTIG: Diese Zeile nicht löschen! ----------------------------------
+// -- WICHTIG: Diese Zeile nicht lÃ¶schen! ----------------------------------
 if (typeof window !== 'undefined') window.LABYRINTH_LEVELS = LEVELS;
